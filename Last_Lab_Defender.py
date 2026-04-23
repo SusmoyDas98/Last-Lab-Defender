@@ -5,11 +5,11 @@ import math
 import random 
 from OpenGL.GLUT import GLUT_BITMAP_HELVETICA_18
 # Global variables 
-camera_pos = (-800, -800, 700)
+camera_pos = (800, 800, 700)
 camera_look_at = (0,0,50)
 axis_decision = (0, 0, 1)
-window_height, window_width = 800, 1200
-field_of_view = 80
+window_height, window_width = 600, 1250
+field_of_view = 30
 GRID_LENGTH, GRID_WIDTH = 1275, 1275
 
 
@@ -20,8 +20,38 @@ class Last_Lab_Defender:
         self.floor_behind_max = -GRID_WIDTH//2
         self.floor_front_max = GRID_WIDTH//2
 
+        # capsule informations
+        self.capsule_height = GRID_LENGTH // 10
+        self.capsule_radius = GRID_WIDTH // 32
+        self.capsule_position  = (self.floor_left_max - 260, self.floor_front_max - 260, 10)
+        self.capsule_base_position = (self.floor_left_max - 260, self.floor_front_max - 260, 0)
+        self.capsule_base_height = 10
+
+        # protagonist informations
+        self.player_spawn_position = (self.floor_left_max - 260, self.floor_front_max - 600, 0)
+              
+        
+
+    def draw_capsule(self):
+        cap_x, cap_y, cap_z = self.capsule_base_position
+        glPushMatrix()
+        glTranslatef(cap_x, cap_y, cap_z)        
+        # glColor3f(55/255, 60/255, 65/255)
+        glColor3f(90/255, 95/255, 100/255)
+        # glColor3f(0,1,1)
+        gluCylinder(gluNewQuadric(), self.capsule_radius*1.5, self.capsule_radius,self.capsule_base_height, 50, 20)
+        glPopMatrix()
+
+        cap_x, cap_y, cap_z = self.capsule_position
+        glPushMatrix()
+        glTranslatef(cap_x, cap_y, cap_z)        
+        glColor3f(120/255, 255/255, 200/255)
+        gluCylinder(gluNewQuadric(), self.capsule_radius, self.capsule_radius,self.capsule_height, 50, 20)
+
+        glPopMatrix()                
+
     def draw_walls(self, axis_close):     
-        length = GRID_LENGTH // 8
+        length = GRID_LENGTH // 7
         width = GRID_WIDTH // 13         
         grid_wall_height = length   
 
@@ -86,19 +116,21 @@ class Last_Lab_Defender:
         glVertex3f(self.floor_left_max,self.floor_behind_max, 0)
         glEnd()
         # drawing the grids
-        for i in range(self.floor_left_max-1, self.floor_right_max+1, -GRID_LENGTH//15):
+        for i in range(self.floor_left_max-2, self.floor_right_max+2, -GRID_LENGTH//15):
+            glLineWidth(3)
             glBegin(GL_LINES)
             glColor3f(110/255, 118/255, 125/255)
             glVertex3f(i, self.floor_front_max-1 ,0)
+            glColor3f(110/255, 118/255, 125/255)
             glColor3f(12/255,12/255,9/255)    
             glVertex3f(i, self.floor_behind_max+1 ,0)
             glEnd()
-        for i in range(self.floor_front_max-1, self.floor_behind_max, -GRID_WIDTH//15):
+        for i in range(self.floor_front_max-2, self.floor_behind_max+2, -GRID_WIDTH//15):
             glBegin(GL_LINES)
             glColor3f(110/255, 118/255, 125/255)
             glVertex3f(self.floor_left_max-1 , i,0)
             glColor3f(12/255,12/255,9/255)    
-            glVertex3f( self.floor_right_max-1, i ,0)
+            glVertex3f( self.floor_right_max+1, i ,0)
             glEnd()            
         # drawing the walls
         x, y ,z = camera_pos
@@ -111,6 +143,15 @@ class Last_Lab_Defender:
         wall_distance_from_camera = dict(sorted(wall_distance_from_camera.items(),key = lambda item:item[1],  reverse=True))
         for  key, value in wall_distance_from_camera.items():
             self.draw_walls(key)
+
+
+    def draw_elements(self):
+        self.draw_lab()        
+        self.draw_capsule()
+        # self.draw_protagonist()
+
+
+    # controls
 
     def specialKeyListener(self, key, x, y):
         global camera_pos ,field_of_view
@@ -137,8 +178,6 @@ class Last_Lab_Defender:
         glutPostRedisplay()
 
 
-    def draw_elements(self):
-        self.draw_lab()        
     def setupCamera(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
@@ -169,7 +208,7 @@ def main():
     glutInitWindowSize(window_width, window_height)
     glutInitWindowPosition(0,0)
     window = glutCreateWindow(b"Last Lab Defender")
-    # glEnable(GL_DEPTH_TEST)
+    glEnable(GL_DEPTH_TEST)
     game = Last_Lab_Defender()
     glutDisplayFunc(game.showScreen)
     # glutKeyboardFunc(game.KeyboardListener)
