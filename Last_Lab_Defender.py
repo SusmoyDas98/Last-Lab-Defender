@@ -5,18 +5,115 @@ import math
 import random 
 from OpenGL.GLUT import GLUT_BITMAP_HELVETICA_18
 # Global variables 
-camera_pos = (800, -800, 700)
+camera_pos = (800, 800, 700)
 camera_look_at = (0,0,50)
 axis_decision = (0, 0, 1)
 window_height, window_width = 800, 1200
-field_of_view = 45
-GRID_LENGTH, GRID_WIDTH = 780, 780
+field_of_view = 75
+GRID_LENGTH, GRID_WIDTH = 1275, 1275
 
 class Last_Lab_Defender:
     def __init__(self):
-        pass
+        self.floor_right_max = -GRID_LENGTH//2
+        self.floor_left_max = GRID_LENGTH//2
+        self.floor_behind_max = -GRID_WIDTH//2
+        self.floor_front_max = GRID_WIDTH//2
+
+
+    def draw_walls(self, axis_close):     
+        length = GRID_LENGTH // 8
+        width = GRID_WIDTH // 13         
+        grid_wall_height = length   
+
+        if axis_close == "+x":
+            # wall on x
+            # glColor3f(78/255,203/255,298/255)
+            glBegin(GL_QUADS)        
+            glColor3f(4/255,5/255,5/255)    
+            glVertex3f(self.floor_right_max, self.floor_front_max, 0)
+            glVertex3f(self.floor_right_max, self.floor_behind_max, 0)
+            glColor3f(31/255,33/255,34/255)    
+            glVertex3f(self.floor_right_max, self.floor_behind_max, grid_wall_height)
+            glVertex3f(self.floor_right_max, self.floor_front_max, grid_wall_height)        
+            glEnd()          
+        elif axis_close == "+y" :
+            # wall on y
+            # glColor3f(85/255,201/255,122/255)
+            glBegin(GL_QUADS)        
+            glColor3f(34/255,36/255,37/255)    
+            glVertex3f(self.floor_left_max, self.floor_front_max, 0)
+            glVertex3f(self.floor_right_max, self.floor_front_max, 0)
+            glColor3f(78/255,82/255,86/255)
+            glVertex3f(self.floor_right_max, self.floor_front_max, grid_wall_height)
+            glVertex3f(self.floor_left_max, self.floor_front_max, grid_wall_height)
+            glEnd()
+        elif axis_close == "-y" :
+            # wall on -y
+            # glColor3f(78/255,127/255,198/255)
+            glBegin(GL_QUADS)        
+            glColor3f(4/255,5/255,5/255)    
+            glVertex3f(self.floor_left_max, self.floor_behind_max, 0)
+            glVertex3f(self.floor_right_max, self.floor_behind_max, 0)
+            glColor3f(31/255,33/255,34/255)    
+            glVertex3f(self.floor_right_max, self.floor_behind_max, grid_wall_height)
+            glVertex3f(self.floor_left_max, self.floor_behind_max, grid_wall_height)       
+            glEnd()     
+        elif axis_close == "-x":
+            # wall on -x side
+            glBegin(GL_QUADS)
+            glColor3f(34/255,36/255,37/255)            
+            glVertex3f(self.floor_left_max, self.floor_front_max, 0)
+            glVertex3f(self.floor_left_max, self.floor_behind_max, 0)
+            glColor3f(78/255,82/255,86/255)
+            glVertex3f(self.floor_left_max, self.floor_behind_max, grid_wall_height)
+            glVertex3f(self.floor_left_max, self.floor_front_max, grid_wall_height)      
+            glEnd()  
+
     def draw_lab(self):
-        pass
+        # drawing the floor
+        glBegin(GL_QUADS)
+        # glColor3f(139/255, 145/255, 150/255)
+        glColor3f(135/255, 175/255, 145/255)
+        glVertex3f(self.floor_left_max,self.floor_front_max, 0)
+        glColor3f(61/255, 66/255, 70/255)
+        # glColor3f(34/255,56/255,37/255) 
+        glVertex3f(self.floor_right_max,self.floor_front_max, 0)
+        # glColor3f(41/255, 42/255, 45/255)
+        glColor3f(2/255,2/255,9/255)    
+        glVertex3f(self.floor_right_max,self.floor_behind_max, 0)
+        glColor3f(61/255, 66/255, 70/255)
+        # glColor3f(34/255,56/255,37/255) 
+        glVertex3f(self.floor_left_max,self.floor_behind_max, 0)
+        glEnd()
+        # drawing the grids
+        for i in range(self.floor_left_max-1, self.floor_right_max+1, -GRID_LENGTH//15):
+            glBegin(GL_LINES)
+            glColor3f(110/255, 118/255, 125/255)
+            glVertex3f(i, self.floor_front_max-1 ,0)
+            glColor3f(12/255,12/255,9/255)    
+            glVertex3f(i, self.floor_behind_max+1 ,0)
+            glEnd()
+        for i in range(self.floor_front_max-1, self.floor_behind_max, -GRID_WIDTH//15):
+            glBegin(GL_LINES)
+            glColor3f(110/255, 118/255, 125/255)
+            glVertex3f(self.floor_left_max-1 , i,0)
+            glColor3f(12/255,12/255,9/255)    
+            glVertex3f( self.floor_right_max-1, i ,0)
+            glEnd()            
+        # drawing the walls
+        x, y ,z = camera_pos
+        wall_distance_from_camera = {
+            "+x" : math.sqrt(((x + GRID_WIDTH//2)**2) + ((y-0)**2) + ((z-0)**2)),
+            "+y" : math.sqrt(((x - 0)**2) + ((y- GRID_LENGTH//2)**2) + ((z-0)**2)),
+            "-y":math.sqrt(((x - 0)**2) + ((y + GRID_LENGTH//2)**2) + ((z-0)**2)),
+            "-x":math.sqrt(((x - GRID_WIDTH//2)**2) + ((y-0)**2) + ((z-0)**2)),            
+        }
+        wall_distance_from_camera = dict(sorted(wall_distance_from_camera.items(),key = lambda item:item[1],  reverse=True))
+        for  key, value in wall_distance_from_camera.items():
+            self.draw_walls(key)
+
+    def draw_elements(self):
+        self.draw_lab()        
     def setupCamera(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
@@ -34,7 +131,7 @@ class Last_Lab_Defender:
         glLoadIdentity()
         glViewport(0, 0, window_width, window_height)
         self.setupCamera()     
-        self.draw_lab()
+        self.draw_elements()
         glutSwapBuffers()
 
 
