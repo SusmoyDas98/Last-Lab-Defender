@@ -5,12 +5,13 @@ import math
 import random 
 from OpenGL.GLUT import GLUT_BITMAP_HELVETICA_18
 # Global variables 
-camera_pos = (800, 800, 700)
+camera_pos = (-800, -800, 700)
 camera_look_at = (0,0,50)
 axis_decision = (0, 0, 1)
 window_height, window_width = 800, 1200
-field_of_view = 75
+field_of_view = 80
 GRID_LENGTH, GRID_WIDTH = 1275, 1275
+
 
 class Last_Lab_Defender:
     def __init__(self):
@@ -18,7 +19,6 @@ class Last_Lab_Defender:
         self.floor_left_max = GRID_LENGTH//2
         self.floor_behind_max = -GRID_WIDTH//2
         self.floor_front_max = GRID_WIDTH//2
-
 
     def draw_walls(self, axis_close):     
         length = GRID_LENGTH // 8
@@ -112,6 +112,31 @@ class Last_Lab_Defender:
         for  key, value in wall_distance_from_camera.items():
             self.draw_walls(key)
 
+    def specialKeyListener(self, key, x, y):
+        global camera_pos ,field_of_view
+        x, y, z = camera_pos
+        if key == GLUT_KEY_LEFT:
+            angle_of_rotation = math.radians(1)
+            old_x = x
+            old_y = y
+            x = old_x*math.cos(angle_of_rotation) - old_y*math.sin(angle_of_rotation)
+            y = old_x*math.sin(angle_of_rotation) + old_y*math.cos(angle_of_rotation)
+
+        elif key == GLUT_KEY_RIGHT:
+            angle_of_rotation = math.radians(-1)
+            old_x = x
+            old_y = y
+            x = old_x*math.cos(angle_of_rotation) - old_y*math.sin(angle_of_rotation)
+            y = old_x*math.sin(angle_of_rotation) + old_y*math.cos(angle_of_rotation)
+
+        elif key == GLUT_KEY_UP:
+            z += 5
+        elif key == GLUT_KEY_DOWN:
+            z -= 5
+        camera_pos = (x, y, z)
+        glutPostRedisplay()
+
+
     def draw_elements(self):
         self.draw_lab()        
     def setupCamera(self):
@@ -148,7 +173,7 @@ def main():
     game = Last_Lab_Defender()
     glutDisplayFunc(game.showScreen)
     # glutKeyboardFunc(game.KeyboardListener)
-    # glutSpecialFunc(game.specialKeyListener)
+    glutSpecialFunc(game.specialKeyListener)
     # glutMouseFunc(game.MouseListener)
     # glutIdleFunc(game.animation)
     glutMainLoop()
