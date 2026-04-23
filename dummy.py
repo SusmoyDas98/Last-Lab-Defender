@@ -9,7 +9,7 @@ camera_pos = (800, 800, 700)
 camera_look_at = (0,0,50)
 axis_decision = (0, 0, 1)
 window_height, window_width = 600, 1250
-field_of_view = 70
+field_of_view = 30
 GRID_LENGTH, GRID_WIDTH = 1275, 1275
 
 
@@ -29,6 +29,76 @@ class Last_Lab_Defender:
 
         # protagonist informations
         self.player_spawn_position = (self.floor_left_max - 260, self.floor_front_max - 600, 0)
+        self.player_body_height = 15
+        self.player_head_radius = 10
+        self.player_leg_height = 20
+        self.player_leg_max_radius = 5
+        self.player_width = 25
+        self.gun_height = 45
+
+
+    def draw_protagonist(self):
+        p_x, p_y, p_z = self.player_spawn_position
+        glPushMatrix()
+        glTranslatef(p_x, p_y, p_z)        
+        # body
+        glPushMatrix()
+        glColor3f(95/255, 127/255, 87/255)
+        glTranslatef(0, 0, (1.5*self.player_leg_height))
+        glScalef(1.5, 1, 2)
+        glutSolidCube(self.player_body_height)
+        glPopMatrix()        
+
+        # legs
+        # left leg
+        glPushMatrix()
+        glColor3f(94/255, 143/255, 208/255)
+        glTranslatef(-10, 0, 0)
+        gluCylinder(gluNewQuadric(), self.player_leg_max_radius*(2/3), self.player_leg_max_radius,self.player_leg_height, 50, 20)
+        glPopMatrix()
+        # right leg
+        glPushMatrix()
+        glColor3f(94/255, 143/255, 208/255)
+        glTranslatef(10, 0, 0)
+        gluCylinder(gluNewQuadric(), self.player_leg_max_radius*(2/3), self.player_leg_max_radius,self.player_leg_height, 50, 20)
+        glPopMatrix()
+
+        # head
+        glPushMatrix()
+        glColor3f(51/255, 51/255, 51/255)
+        glTranslatef(0, 0,  self.player_body_height+self.player_leg_height + (self.player_body_height*1.2))
+        gluSphere(gluNewQuadric(), self.player_head_radius, 80, 80)
+        glPopMatrix()
+
+        # hands
+        # hand 1
+        glPushMatrix()
+        glColor3f(232/255, 195/255, 166/255)
+        glTranslatef(10, -5,  self.player_body_height+self.player_leg_height )
+        glRotatef(-90, 0, 1, 0)
+        glRotatef(90, 1, 0, 0)
+        gluCylinder(gluNewQuadric(), self.player_leg_max_radius, self.player_leg_max_radius*(3/4),self.player_width, 50, 20)
+        glPopMatrix()
+        # hand 2
+        glPushMatrix()
+        glColor3f(232/255, 195/255, 166/255)
+        glTranslatef(-10, -5,  self.player_body_height+self.player_leg_height )
+        glRotatef(-90, 0, 1, 0)
+        glRotatef(90, 1, 0, 0)
+        gluCylinder(gluNewQuadric(), self.player_leg_max_radius, self.player_leg_max_radius*(3/4),self.player_width, 50, 20)
+        glPopMatrix()        
+
+        # gun
+        glPushMatrix()
+        glColor3f(126/255, 127/255, 106/255)
+        glTranslatef(0, -5, self.player_body_height+self.player_leg_height )
+        glRotatef(-90, 0, 1, 0)
+        glRotatef(90, 1, 0, 0)
+        gluCylinder(gluNewQuadric(), self.player_leg_max_radius, self.player_leg_max_radius*(3/4),self.gun_height, 50, 20)
+        self.gun_facing = [0, -5-self.gun_height, self.player_body_height+self.player_leg_height ]
+        glPopMatrix()         
+        glPopMatrix()               
+        
 
     def draw_capsule(self):
         cap_x, cap_y, cap_z = self.capsule_base_position
@@ -146,7 +216,7 @@ class Last_Lab_Defender:
     def draw_elements(self):
         self.draw_lab()        
         self.draw_capsule()
-        # self.draw_protagonist()
+        self.draw_protagonist()
 
 
     # controls
