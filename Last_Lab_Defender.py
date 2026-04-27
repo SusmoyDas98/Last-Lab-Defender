@@ -5,13 +5,13 @@ import math
 import random 
 from OpenGL.GLUT import GLUT_BITMAP_HELVETICA_18
 # Global variables 
-camera_pos = (377, -450, 50)
-camera_look_at = (377,77,75)
-# camera_pos = (800, -800, 700)
-# camera_look_at = (0,0,50)
+# camera_pos = (377, -450, 50)
+# camera_look_at = (377,77,75)
+camera_pos = (800, 800, 700)
+camera_look_at = (0,0,50)
 axis_decision = (0, 0, 1)
 window_height, window_width = 600, 1250
-field_of_view = 20
+field_of_view = 50
 GRID_LENGTH, GRID_WIDTH = 1275, 1275
 
 
@@ -25,8 +25,8 @@ class Last_Lab_Defender:
         # capsule informations
         self.capsule_height = GRID_LENGTH // 10
         self.capsule_radius = GRID_WIDTH // 32
-        self.capsule_position  = (self.floor_left_max - 260, self.floor_front_max - 260, 10)
-        self.capsule_base_position = (self.floor_left_max - 260, self.floor_front_max - 260, 0)
+        self.capsule_position  = [self.floor_left_max - 260, self.floor_front_max - 260, 10]
+        self.capsule_base_position = [self.floor_left_max - 260, self.floor_front_max - 260, 0]
         self.capsule_base_height = 10
 
         # protagonist informations
@@ -39,9 +39,14 @@ class Last_Lab_Defender:
         self.player_leg_max_radius = 10
         self.player_width = 25
         self.gun_height = 45
-        self.gun_facing = (0,0,0)
+        self.gun_facing = [0,0,0]
         self.player_speed = 10
               
+        # bullets information
+        self.bullet_size = 5
+        self.bullet_speed = 6
+        self.all_bullets = []
+
         # level updates
         self.level_1_weapon_head_color = (170/255, 120/255, 255/255)
         self.level_1_weapon_handle_color = (200/255, 180/255, 255/255)
@@ -210,8 +215,10 @@ class Last_Lab_Defender:
         glPushMatrix()
         glColor3f(self.level_1_weapon_head_color[0], self.level_1_weapon_head_color[1], self.level_1_weapon_head_color[2])
         glTranslatef(0, -35, self.player_leg_height+self.player_body_height*1.5)
-        self.gun_facing = [0, -35-self.gun_height, self.player_leg_height+self.player_body_height*2]
-        glRotatef(86, 1, 0,0)
+        dir_x = math.cos(math.radians(self.player_angle-90))
+        dir_y = math.sin(math.radians(self.player_angle-90))
+        self.gun_facing = [p_x+ dir_x*(self.gun_height+20), p_y + dir_y*(self.gun_height+20), p_z+self.player_leg_height+self.player_body_height*1.5]
+        glRotatef(90, 1, 0,0)
         gluCylinder(gluNewQuadric(), self.shoe_radius*1.5, self.shoe_radius, self.player_leg_height*2, 50, 80)
         glPopMatrix()
 
@@ -225,6 +232,35 @@ class Last_Lab_Defender:
 
         glPopMatrix()
         
+    def bullet_movement(self):
+        for i in self.all_bullets:
+            bullet_coord = i["bullet_coord"]
+            bullet_direction = i["bullet_direction"]
+            x_move = bullet_coord[0] + self.bullet_speed * bullet_direction[0]
+            y_move = bullet_coord[1] + self.bullet_speed * bullet_direction[1]
+            if (-GRID_WIDTH//2 < x_move < GRID_WIDTH//2 and -GRID_WIDTH//2 < y_move < GRID_WIDTH//2) :
+                bullet_coord[0] = x_move; bullet_coord[1] = y_move    
+                i["bullet_coord"] =  bullet_coord
+            else:                 
+                self.all_bullets.remove(i)
+
+                
+
+
+
+
+    def draw_bullets(self):
+        for i in range(len(self.all_bullets)):
+            x, y, z = self.all_bullets[i]['bullet_coord']
+            dir_x, dir_y = self.all_bullets[i]['bullet_direction'] 
+            glPushMatrix()
+            glTranslatef(x, y, z)
+            glColor3f(1, 1, 0)
+            glutSolidCube(self.bullet_size)
+            glPopMatrix()
+            glutPostRedisplay()
+
+            
 
     def draw_capsule(self):
         cap_x, cap_y, cap_z = self.capsule_base_position
@@ -343,9 +379,21 @@ class Last_Lab_Defender:
         self.draw_lab()        
         self.draw_capsule()
         self.draw_protagonist()
+        self.draw_bullets()
 
 
     # controls
+    def MouseListener(self, button, state, x, y):
+        if button == GLUT_LEFT_BUTTON and state == GLUT_DOWN:
+            x, y, z = self.gun_facing
+            dir_x = math.cos(math.radians(self.player_angle-90))
+            dir_y = math.sin(math.radians(self.player_angle-90))
+            self.all_bullets.append({
+                'bullet_coord': [x, y, z],
+                'bullet_direction' : [dir_x, dir_y]
+            })
+
+
     def KeyboardListener(self, key, x, y):
         global field_of_view
         x, y, z = self.player_spawn_position
@@ -357,9 +405,9 @@ class Last_Lab_Defender:
             dir_x = math.cos(math.radians(self.player_angle-90))
             dir_y = math.sin(math.radians(self.player_angle-90))
             move_x, move_y = x+dir_x*self.player_speed, y+dir_y*self.player_speed
-            self.gun_facing[0] += self.gun_facing[0]+move_x
-            self.gun_facing[1] += self.gun_facing[1] + move_y
-            if -GRID_WIDTH//2 < self.gun_facing[0] < GRID_WIDTH//2 and  -GRID_WIDTH//2 < self.gun_facing[1] < GRID_WIDTH//2:
+            self.gun_facing[0] += dir_x * self.player_speed
+            self.gun_facing[1] += dir_y * self.player_speed
+            if (-GRID_WIDTH//2 < self.gun_facing[0]  + self.gun_height< GRID_WIDTH//2 and  -GRID_WIDTH//2 <self.gun_facing[1]  + self.gun_height < GRID_WIDTH//2 ) and (-GRID_WIDTH//2 < move_x < GRID_WIDTH//2 and  -GRID_WIDTH//2 < move_y < GRID_WIDTH//2 ):
                 x = move_x
                 y = move_y
             self.player_spawn_position = (x, y, z)
@@ -367,15 +415,15 @@ class Last_Lab_Defender:
             dir_x = math.cos(math.radians(self.player_angle-90))
             dir_y = math.sin(math.radians(self.player_angle-90))
             move_x, move_y = x-dir_x*self.player_speed, y-dir_y*self.player_speed
-            self.gun_facing[0] += self.gun_facing[0]+move_x
-            self.gun_facing[1] += self.gun_facing[1] + move_y
-            if -GRID_WIDTH//2 < self.gun_facing[0] < GRID_WIDTH//2 and  -GRID_WIDTH//2 < self.gun_facing[1] < GRID_WIDTH//2:
+            self.gun_facing[0] -= dir_x * self.player_speed
+            self.gun_facing[1] -= dir_y * self.player_speed
+            if (-GRID_WIDTH//2 < self.gun_facing[0]  + self.gun_height< GRID_WIDTH//2 and  -GRID_WIDTH//2 <self.gun_facing[1]  + self.gun_height < GRID_WIDTH//2 ) and (-GRID_WIDTH//2 < move_x < GRID_WIDTH//2 and  -GRID_WIDTH//2 < move_y < GRID_WIDTH//2 ):
                 x = move_x
                 y = move_y
             self.player_spawn_position = (x, y, z)            
-        elif key == b"a":
-            self.player_angle -= 5
         elif key == b"d":
+            self.player_angle -= 5
+        elif key == b"a":
             self.player_angle += 5
         glutPostRedisplay()
             
@@ -404,6 +452,8 @@ class Last_Lab_Defender:
         camera_pos = (x, y, z)
         glutPostRedisplay()
 
+    def animation(self):
+        glutPostRedisplay()
 
     def setupCamera(self):
         glMatrixMode(GL_PROJECTION)
@@ -424,6 +474,7 @@ class Last_Lab_Defender:
         self.setupCamera()     
         # call the functions 
         self.draw_elements()
+        self.bullet_movement()
         glutSwapBuffers()
 
 
@@ -441,8 +492,8 @@ def main():
     glutDisplayFunc(game.showScreen)
     glutKeyboardFunc(game.KeyboardListener)
     glutSpecialFunc(game.specialKeyListener)
-    # glutMouseFunc(game.MouseListener)
-    # glutIdleFunc(game.animation)
+    glutMouseFunc(game.MouseListener)
+    glutIdleFunc(game.animation)
     glutMainLoop()
 
 if __name__ == "__main__":
