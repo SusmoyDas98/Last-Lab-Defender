@@ -5,10 +5,10 @@ import math
 import random 
 from OpenGL.GLUT import GLUT_BITMAP_HELVETICA_18
 # Global variables 
-# camera_pos = (377, -450, 50)
-# camera_look_at = (377,77,75)
-camera_pos = (800, 800, 700)
-camera_look_at = (0,0,50)
+camera_pos = (377, -450, 50)
+camera_look_at = (377,77,75)
+# camera_pos = (800, 800, 700)
+# camera_look_at = (0,0,50)
 axis_decision = (0, 0, 1)
 window_height, window_width = 600, 1250
 field_of_view = 50
@@ -21,6 +21,9 @@ class Last_Lab_Defender:
         self.floor_left_max = GRID_LENGTH//2
         self.floor_behind_max = -GRID_WIDTH//2
         self.floor_front_max = GRID_WIDTH//2
+
+        # game level 
+        self.game_level = 1
 
         # capsule informations
         self.capsule_height = GRID_LENGTH // 10
@@ -46,10 +49,7 @@ class Last_Lab_Defender:
         self.bullet_size = 5
         self.bullet_speed = 6
         self.all_bullets = []
-
-        # level updates
-        self.level_1_weapon_head_color = (170/255, 120/255, 255/255)
-        self.level_1_weapon_handle_color = (200/255, 180/255, 255/255)
+    
 
     def draw_protagonist(self):
         p_x,  p_y , p_z =  self.player_spawn_position
@@ -205,7 +205,7 @@ class Last_Lab_Defender:
         # weapon back
         glPushMatrix()
         # glColor3f(170/255, 220/255, 255/255)
-        glColor3f(self.level_1_weapon_head_color[0], self.level_1_weapon_head_color[1], self.level_1_weapon_head_color[2])
+        glColor3f(self.level_weapon_head_color[0], self.level_weapon_head_color[1], self.level_weapon_head_color[2])
         glTranslatef(0, -35, self.player_leg_height+self.player_body_height*1.5)
         gluSphere(gluNewQuadric(), self.player_head_radius//2.5, 80, 20)
         glPopMatrix()        
@@ -213,7 +213,7 @@ class Last_Lab_Defender:
 
         # Player weapon 
         glPushMatrix()
-        glColor3f(self.level_1_weapon_head_color[0], self.level_1_weapon_head_color[1], self.level_1_weapon_head_color[2])
+        glColor3f(self.level_weapon_head_color[0], self.level_weapon_head_color[1], self.level_weapon_head_color[2])
         glTranslatef(0, -35, self.player_leg_height+self.player_body_height*1.5)
         dir_x = math.cos(math.radians(self.player_angle-90))
         dir_y = math.sin(math.radians(self.player_angle-90))
@@ -224,7 +224,7 @@ class Last_Lab_Defender:
 
         # weapon handle
         glPushMatrix()
-        glColor3f(self.level_1_weapon_handle_color[0], self.level_1_weapon_handle_color[1], self.level_1_weapon_handle_color[2])
+        glColor3f(self.level_weapon_handle_color[0], self.level_weapon_handle_color[1], self.level_weapon_handle_color[2])
         glTranslatef(0, -45, self.player_leg_height+self.player_body_height-5)
         glRotatef(15, 1, 0, 0)
         gluCylinder(gluNewQuadric(), self.shoe_radius*1.5, self.shoe_radius, self.player_leg_height-10, 50, 80)
@@ -376,7 +376,8 @@ class Last_Lab_Defender:
 
 
     def draw_elements(self):
-        self.draw_lab()        
+        self.draw_lab()     
+        self.weapon_upgrade()
         self.draw_capsule()
         self.draw_protagonist()
         self.draw_bullets()
@@ -425,6 +426,13 @@ class Last_Lab_Defender:
             self.player_angle -= 5
         elif key == b"a":
             self.player_angle += 5
+
+        #  This part if for manually changing the level for checking the changes appearing
+        elif key == b"n":
+            self.game_level_upgrader(False)
+        elif key == b"m":
+            self.game_level_upgrader()
+
         glutPostRedisplay()
             
 
@@ -451,6 +459,29 @@ class Last_Lab_Defender:
             z -= 5
         camera_pos = (x, y, z)
         glutPostRedisplay()
+
+    # weapon upgrade:
+    def weapon_upgrade(self):
+        if self.game_level == 1:
+            self.level_weapon_head_color = (170/255, 120/255, 255/255)
+            self.level_weapon_handle_color = (200/255, 180/255, 255/255)
+        elif self.game_level == 2:
+            self.level_weapon_head_color = (0/255, 200/255, 255/255)
+            self.level_weapon_handle_color = (120/255, 255/255, 255/255)
+        elif self.game_level == 3:
+            self.level_weapon_head_color = (255/255, 60/255, 120/255)
+            self.level_weapon_handle_color = (255/255, 120/255, 180/255)  
+
+    # level decider
+    def game_level_upgrader(self, up = True):
+        if up:
+            self.game_level = self.game_level + 1 if self.game_level < 3 else self.game_level
+        else:
+            self.game_level = self.game_level - 1 if self.game_level > 0 else self.game_level
+        self.weapon_upgrade()
+        glutPostRedisplay()
+
+
 
     def animation(self):
         glutPostRedisplay()
