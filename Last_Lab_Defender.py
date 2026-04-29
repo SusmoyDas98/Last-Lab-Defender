@@ -29,6 +29,7 @@ class Last_Lab_Defender:
         self.capsule_position  = [self.floor_left_max - 260, self.floor_front_max - 260, 10]
         self.capsule_base_position = [self.floor_left_max - 260, self.floor_front_max - 260, 0]
         self.capsule_base_height = 10
+        self.capsule_health = 10
 
         # protagonist informations
         self.player_angle = 0
@@ -55,7 +56,7 @@ class Last_Lab_Defender:
         self.enemies = []
         
         # SLOWER ENEMY SPEED
-        self.enemy_speed = 0.25 
+        self.enemy_speed = 0.75 
         
         # Increased Enemy Size
         self.enemy_body_radius = 35 
@@ -405,6 +406,7 @@ class Last_Lab_Defender:
 
     def enemy_movement(self):
         target_x, target_y, _ = self.capsule_position
+        player_x, player_y, _ = self.player_spawn_position
         enemies_to_remove = []
         
         for e_idx, enemy in enumerate(self.enemies):
@@ -415,8 +417,20 @@ class Last_Lab_Defender:
             # Cylinder Collision Detection: Vanish if touching the cylinder
             if distance < (self.capsule_radius + enemy['body_r']):
                 enemies_to_remove.append(e_idx)
+                self.capsule_health -= 1
+                print(f"Capsule hit! Remaining health: {self.capsule_health}")
                 continue # Skip moving this enemy as it's being removed
             
+            # Player Collisioon Detection: Vanish if touching the player
+            dx_p = player_x - enemy['x']
+            dy_p = player_y - enemy['y']
+            distance_p = math.sqrt(dx_p**2 + dy_p**2)
+            if distance_p < (self.player_width + enemy['body_r']):
+                enemies_to_remove.append(e_idx)
+                self.player_health -= 1
+                print(f"Player hit! Remaining health: {self.player_health}")
+                continue # Skip moving this enemy as it's being removed
+
             # Normalize vector and move enemy towards the capsule
             if distance > 0:
                 enemy['x'] += (dx / distance) * self.enemy_speed
@@ -427,7 +441,7 @@ class Last_Lab_Defender:
                 bounce_height = abs(math.sin(enemy['run_cycle'])) * 15
                 enemy['z'] = enemy['base_z'] + bounce_height
                 
-        # Safely remove enemies that hit the cylinder
+        # Safely remove enemies that hit the cylinder or player
         for i in sorted(enemies_to_remove, reverse=True):
             if i < len(self.enemies):
                 self.enemies.pop(i)
@@ -452,11 +466,12 @@ class Last_Lab_Defender:
                     enemies_to_remove.append(e_idx)
                     
                     if enemy['type'] == 'special':
-                        self.player_health += 1
-                        print(f"Special Enemy Killed! Health increased to {self.player_health}")
+                        if self.player_health < 5:
+                            self.player_health += 1
+                            print(f"Special Enemy Killed! Health increased to {self.player_health}")
                     else:
                         self.normal_enemies_killed += 1
-                    break 
+                    break  
 
         for i in sorted(bullets_to_remove, reverse=True):
             if i < len(self.all_bullets):
@@ -487,6 +502,88 @@ class Last_Lab_Defender:
             glPopMatrix()
 
     # --- END ENEMY METHODS ---
+    def draw_health_bar(self, x, y, width, height, current, maximum, fill_color):
+        # Fill (colored) showing remaining health
+        if current > 0:
+            fill_width = width * (current / maximum)
+            if current < 3:
+                fill_color = (1.0, 0.2, 0.2)
+                glColor3f(fill_color[0], fill_color[1], fill_color[2])
+            elif current < 4:
+                fill_color = (1.0, 0.6, 0.3)
+                glColor3f(fill_color[0], fill_color[1], fill_color[2])
+            else:
+                glColor3f(fill_color[0], fill_color[1], fill_color[2])
+            glBegin(GL_QUADS)
+            glVertex3f(x, y, 0  )
+            glVertex3f(x + fill_width, y, 0)
+            glVertex3f(x + fill_width, y + height, 0)
+            glVertex3f(x, y + height, 0)
+            glEnd()
+
+    def draw_hud(self):
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        gluOrtho2D(0, window_width, 0, window_height)
+
+        glMatrixMode(GL_MODELVIEW)
+        glLoadIdentity()
+
+        bar_w = 200
+        bar_h = 25
+
+        #player health bar text
+        life_text = f"Player HP:"
+        self.draw_text(30, window_height - 25, life_text, GLUT_BITMAP_HELVETICA_18)
+
+        #capsule health bar text
+        life_text = f"Capsule HP:"
+        self.draw_text(30, 60, life_text, GLUT_BITMAP_HELVETICA_18)
+
+        # Player bar — top-left, green
+        self.draw_health_bar(
+            x=30,
+            y=window_height - 60,
+            width=bar_w,
+            height=bar_h,
+            current= self.player_health,
+            maximum=5,
+            fill_color=(0.2, 0.9, 0.3)
+        )
+
+        # Capsule bar — bottom-left, cyan
+        self.draw_health_bar(
+            x= 30,
+            y=25,
+            width=bar_w,
+            height=bar_h,
+            current= self.capsule_health,
+            maximum= 5,
+            fill_color=(0.2, 0.8, 1.0)
+        )
+
+    def draw_text(self, x, y, text, font=GLUT_BITMAP_HELVETICA_18):
+            glMatrixMode(GL_PROJECTION)
+            glPushMatrix()
+            glLoadIdentity()
+            # Set up an orthographic projection that matches window coordinates
+            gluOrtho2D(0, window_width, 0, window_height)  # left, right, bottom, top
+
+            glMatrixMode(GL_MODELVIEW)
+            glPushMatrix()
+            glLoadIdentity()
+            
+            glColor3f(1, 1, 1)
+            # Draw text at (x, y) in screen coordinates
+            glRasterPos2f(x, y)
+            for ch in text:
+                glutBitmapCharacter(font, ord(ch))
+            
+            # Restore original projection and modelview matrices
+            glPopMatrix()
+            glMatrixMode(GL_PROJECTION)
+            glPopMatrix()
+            glMatrixMode(GL_MODELVIEW)
 
     def draw_elements(self):
         self.draw_lab()     
@@ -621,6 +718,8 @@ class Last_Lab_Defender:
         # call the functions 
         self.draw_elements()
         self.bullet_movement()
+
+        self.draw_hud()
         glutSwapBuffers()
 
 def main():
