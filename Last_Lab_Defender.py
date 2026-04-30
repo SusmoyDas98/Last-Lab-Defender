@@ -862,9 +862,11 @@ class Last_Lab_Defender:
         if self.level_1_limit_crossed and self.game_level == 2:
             self.level_weapon_head_color = (0/255, 200/255, 255/255)
             self.level_weapon_handle_color = (120/255, 255/255, 255/255)
+            self.bullet_speed = 55
         elif self.level_2_limit_crossed   and self.game_level == 3:
             self.level_weapon_head_color = (255/255, 60/255, 120/255)
             self.level_weapon_handle_color = (255/255, 120/255, 180/255)  
+            self.bullet_speed = 80
         else:
             self.level_weapon_head_color = (170/255, 120/255, 255/255)
             self.level_weapon_handle_color = (200/255, 180/255, 255/255)            
