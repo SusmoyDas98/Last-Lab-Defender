@@ -4,14 +4,15 @@ from OpenGL.GLU import *
 import math
 import random 
 from OpenGL.GLUT import GLUT_BITMAP_HELVETICA_18
+import time
 
 # Global variables 
 camera_pos = (800, 800, 700)
-camera_look_at = (377,77,75)
+camera_look_at = (327,77,75)
 axis_decision = (0, 0, 1)
 window_height, window_width = 600, 1250
-field_of_view = 50
-GRID_LENGTH, GRID_WIDTH = 1275, 1275
+field_of_view = 90
+GRID_LENGTH, GRID_WIDTH = 2250, 2250
 
 class Last_Lab_Defender:
     def __init__(self):
@@ -19,9 +20,20 @@ class Last_Lab_Defender:
         self.floor_left_max = GRID_LENGTH//2
         self.floor_behind_max = -GRID_WIDTH//2
         self.floor_front_max = GRID_WIDTH//2
+        self.initiate_all()
+
+    def initiate_all(self):
+
+        # time related 
+        self.level_1_time_limit = 60 #  60 seconds
+        self.level_2_time_limit = 60 #  60 seconds
+        self.start_time = time.time()
+        
+
 
         # game level 
         self.game_level = 1
+
 
         # capsule informations (Positioned near the top-left positive axes)
         self.capsule_height = GRID_LENGTH // 10
@@ -30,6 +42,7 @@ class Last_Lab_Defender:
         self.capsule_base_position = [self.floor_left_max - 260, self.floor_front_max - 260, 0]
         self.capsule_base_height = 10
         self.capsule_health = 10
+
 
         # protagonist informations
         self.player_angle = 0
@@ -45,8 +58,8 @@ class Last_Lab_Defender:
         self.player_speed = 10
               
         # bullets information
-        self.bullet_size = 5
-        self.bullet_speed = 6
+        self.bullet_size = 8
+        self.bullet_speed = 16
         self.all_bullets = []
         
         # --- ENEMY & PLAYER STATE VARIABLES ---
@@ -63,7 +76,25 @@ class Last_Lab_Defender:
         self.enemy_head_radius = 25 
         
         # Floor alignment: Base Z is their radius so they sit exactly on the floor
-        self.enemy_base_z = self.enemy_body_radius
+        self.enemy_base_z = self.enemy_body_radius        
+
+
+    def time_control(self):
+        self.time_passed  = time.time() - self.start_time
+        self.remaining_time = max(0, self.level_1_time_limit - self.time_passed)
+        if self.remaining_time <= 0:
+            self.game_level_upgrader()
+            self.start_time = time.time()
+
+    def display_time(self):
+        if self.remaining_time > 59:
+            time_left = "01:00"
+            time_text = f"Remaining Time: {time_left}"
+        else:
+            time_left = int(self.remaining_time)
+            time_text= f"Remaining Time: 00:{time_left}"
+
+        self.draw_text(window_width - 250, window_height - 30, time_text )
     
     def draw_protagonist(self):
         p_x,  p_y , p_z =  self.player_spawn_position
@@ -777,10 +808,10 @@ class Last_Lab_Defender:
         elif key == b"a":
             self.player_angle += 5
         #  This part if for manually changing the level for checking the changes appearing
-        elif key == b"n":
-            self.game_level_upgrader(False)
-        elif key == b"m":
-            self.game_level_upgrader()
+        # elif key == b"n":
+        #     self.game_level_upgrader(False)
+        # elif key == b"m":
+        #     self.game_level_upgrader()
 
         glutPostRedisplay()
             
@@ -820,13 +851,20 @@ class Last_Lab_Defender:
             self.level_weapon_head_color = (255/255, 60/255, 120/255)
             self.level_weapon_handle_color = (255/255, 120/255, 180/255)  
 
+    def display_level(self):
+            level_text = f"Level: {self.game_level}"
+            self.draw_text(window_width - window_width//2, window_height - 30, level_text )   
+
+
     # level decider
     def game_level_upgrader(self, up = True):
         if up:
             self.game_level = self.game_level + 1 if self.game_level < 3 else self.game_level
-        else:
-            self.game_level = self.game_level - 1 if self.game_level > 0 else self.game_level
+
+        # else:
+            # self.game_level = self.game_level - 1 if self.game_level > 0 else self.game_level
         self.weapon_upgrade()
+        # self.enemy_upgrade()
         glutPostRedisplay()
 
     def animation(self):
@@ -835,7 +873,7 @@ class Last_Lab_Defender:
     def setupCamera(self):
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        gluPerspective(field_of_view, window_width/window_height, 0.1, 2500)
+        gluPerspective(field_of_view, window_width/window_height, 0.1, 4500)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
         x, y, z = camera_pos
@@ -851,6 +889,14 @@ class Last_Lab_Defender:
         glViewport(0, 0, window_width, window_height)
         self.setupCamera()     
         
+        # show levels
+        self.display_level()
+
+        # time functions 
+        self.time_control()
+        self.display_time()
+
+
         # Enemy calls
         self.spawn_enemies()
         self.enemy_movement()
