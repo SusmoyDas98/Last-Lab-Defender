@@ -80,7 +80,10 @@ class Last_Lab_Defender:
         self.enemy_head_radius = 25 
         
         # Floor alignment: Base Z is their radius so they sit exactly on the floor
-        self.enemy_base_z = self.enemy_body_radius        
+        self.enemy_base_z = self.enemy_body_radius   
+
+        #player-view
+        self.first_person_view = False     
 
 
     def time_control(self):
@@ -792,6 +795,14 @@ class Last_Lab_Defender:
                 'bullet_coord': [x, y, z],
                 'bullet_direction' : [dir_x, dir_y]
             })
+        
+        elif button == GLUT_RIGHT_BUTTON and state == GLUT_DOWN:
+                self.first_person_view = not self.first_person_view
+                if self.first_person_view:
+                    print("First-Person View: ON")
+                else:
+                    print("Third-Person View: ON")
+
 
     def KeyboardListener(self, key, x, y):
         global field_of_view
@@ -900,12 +911,30 @@ class Last_Lab_Defender:
         gluPerspective(field_of_view, window_width/window_height, 0.1, 4500)
         glMatrixMode(GL_MODELVIEW)
         glLoadIdentity()
-        x, y, z = camera_pos
-        look_x, look_y,look_z = camera_look_at
-        respect_to_x, respect_to_y, respect_to_z = axis_decision
-        gluLookAt(x, y, z,
-                  look_x, look_y,look_z,
-                  respect_to_x, respect_to_y, respect_to_z)        
+
+        if self.first_person_view:
+            x, y, z = self.player_spawn_position
+            dir_x = math.cos(math.radians(self.player_angle-90))
+            dir_y = math.sin(math.radians(self.player_angle-90))
+            eye_height = self.player_body_height * 3.2
+            eye_forward_offset = self.player_head_radius + 12
+            eye_x = x + dir_x * eye_forward_offset
+            eye_y = y + dir_y * eye_forward_offset
+            eye_z = z + eye_height
+            look_dist = 100
+            look_x = eye_x + look_dist * dir_x
+            look_y = eye_y + look_dist * dir_y
+            look_z = eye_z
+            gluLookAt(eye_x, eye_y, eye_z,
+                    look_x, look_y,look_z,
+                    0, 0, 1)
+        else:
+            x, y, z = camera_pos
+            look_x, look_y,look_z = camera_look_at
+            respect_to_x, respect_to_y, respect_to_z = axis_decision
+            gluLookAt(x, y, z,
+                    look_x, look_y,look_z,
+                    respect_to_x, respect_to_y, respect_to_z)        
 
     def showScreen(self):
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
