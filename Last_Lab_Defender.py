@@ -28,12 +28,16 @@ class Last_Lab_Defender:
         self.level_1_time_limit = 60 #  60 seconds
         self.level_2_time_limit = 60 #  60 seconds
         self.start_time = time.time()
-        
-
 
         # game level 
         self.game_level = 1
 
+        # kill count
+        self.total_kills = 0
+        self.level_1_kill_limit = 30
+        self.level_2_kill_limit = 40
+        self.level_1_limit_crossed = False
+        self.level_2_limit_crossed = False        
 
         # capsule informations (Positioned near the top-left positive axes)
         self.capsule_height = GRID_LENGTH // 10
@@ -501,8 +505,15 @@ class Last_Lab_Defender:
                         if self.player_health < 5:
                             self.player_health += 1
                             print(f"Special Enemy Killed! Health increased to {self.player_health}")
+                            
                     else:
                         self.normal_enemies_killed += 1
+                    # increases the kill count 
+                    self.total_kills += 1                        
+                    if self.game_level == 1 and self.total_kills >= self.level_1_kill_limit:
+                        self.level_1_limit_crossed = True
+                    elif self.game_level == 2 and self.total_kills >= self.level_2_kill_limit:
+                        self.level_2_limit_crossed = True                    
                     break  
 
         for i in sorted(bullets_to_remove, reverse=True):
@@ -512,6 +523,12 @@ class Last_Lab_Defender:
         for i in sorted(enemies_to_remove, reverse=True):
             if i < len(self.enemies):
                 self.enemies.pop(i)
+
+    def display_kill_count(self):
+        limit = self.level_1_kill_limit if self.game_level == 1 else self.level_2_kill_limit
+        kill_text = f"Level {self.game_level} total Kills: {self.total_kills}/{limit}" 
+        self.draw_text(window_width - 250, window_height - 60, kill_text)
+
 
     def draw_enemies(self):
         for enemy in self.enemies:
@@ -840,16 +857,18 @@ class Last_Lab_Defender:
         glutPostRedisplay()
 
     # weapon upgrade:
-    def weapon_upgrade(self):
-        if self.game_level == 1:
-            self.level_weapon_head_color = (170/255, 120/255, 255/255)
-            self.level_weapon_handle_color = (200/255, 180/255, 255/255)
-        elif self.game_level == 2:
+    def weapon_upgrade(self, level = 1):
+
+        if self.level_1_limit_crossed and self.game_level == 2:
             self.level_weapon_head_color = (0/255, 200/255, 255/255)
             self.level_weapon_handle_color = (120/255, 255/255, 255/255)
-        elif self.game_level == 3:
+        elif self.level_2_limit_crossed   and self.game_level == 3:
             self.level_weapon_head_color = (255/255, 60/255, 120/255)
             self.level_weapon_handle_color = (255/255, 120/255, 180/255)  
+        else:
+            self.level_weapon_head_color = (170/255, 120/255, 255/255)
+            self.level_weapon_handle_color = (200/255, 180/255, 255/255)            
+
 
     def display_level(self):
             level_text = f"Level: {self.game_level}"
@@ -860,9 +879,12 @@ class Last_Lab_Defender:
     def game_level_upgrader(self, up = True):
         if up:
             self.game_level = self.game_level + 1 if self.game_level < 3 else self.game_level
+            self.total_kills = 0
 
         # else:
             # self.game_level = self.game_level - 1 if self.game_level > 0 else self.game_level
+
+        
         self.weapon_upgrade()
         # self.enemy_upgrade()
         glutPostRedisplay()
@@ -893,8 +915,12 @@ class Last_Lab_Defender:
         self.display_level()
 
         # time functions 
-        self.time_control()
-        self.display_time()
+        if self.game_level < 3:
+            self.time_control()
+            self.display_time()
+
+        # kill count 
+        self.display_kill_count()
 
 
         # Enemy calls
