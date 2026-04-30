@@ -10,7 +10,7 @@ import time
 camera_pos = (800, 800, 700)
 camera_look_at = (327,77,75)
 axis_decision = (0, 0, 1)
-window_height, window_width = 600, 1250
+window_height, window_width = 630, 1270
 field_of_view = 90
 GRID_LENGTH, GRID_WIDTH = 2250, 2250
 
@@ -62,7 +62,7 @@ class Last_Lab_Defender:
         self.player_speed = 10
               
         # bullets information
-        self.bullet_size = 8
+        self.bullet_size = 6
         self.bullet_speed = 16
         self.all_bullets = []
         
