@@ -4,6 +4,7 @@ from OpenGL.GLU import *
 import math
 import random 
 from OpenGL.GLUT import GLUT_BITMAP_HELVETICA_18
+from OpenGL.GLUT import GLUT_BITMAP_TIMES_ROMAN_24
 import time
 
 # Global variables 
@@ -25,12 +26,16 @@ class Last_Lab_Defender:
     def initiate_all(self):
 
         # time related 
-        self.level_1_time_limit = 60 #  60 seconds
-        self.level_2_time_limit = 60 #  60 seconds
+        self.level_1_time_limit = 10 #  60 seconds
+        self.level_2_time_limit = 10 #  60 seconds
         self.start_time = time.time()
+        self.remaining_time = self.level_1_time_limit
+        self.time_passed = 0
 
         # game level 
         self.game_level = 1
+        self.transition_pause = False
+        self.transition_start = None
 
         # kill count
         self.total_kills = 0
@@ -122,10 +127,19 @@ class Last_Lab_Defender:
 
     def time_control(self):
         self.time_passed  = time.time() - self.start_time
-        self.remaining_time = max(0, self.level_1_time_limit - self.time_passed)
-        if self.remaining_time <= 0:
-            self.game_level_upgrader()
-            self.start_time = time.time()
+        current_limit = self.level_1_time_limit if self.game_level == 1 else self.level_2_time_limit
+        self.remaining_time = max(0, current_limit - self.time_passed)
+        if self.remaining_time <= 0 and not self.transition_pause:
+            # showing transition  between levels
+            self.transition_pause = True
+            self.transition_start = time.time()
+
+            self.enemies.clear()
+            self.enemy_bullets.clear()
+            self.all_bullets.clear()
+            self.cannonballs.clear()
+            # self.game_level_upgrader()
+            # self.start_time = time.time()
 
     def display_time(self):
         if self.remaining_time > 59:
@@ -1394,6 +1408,7 @@ class Last_Lab_Defender:
     def game_level_upgrader(self, up = True):
         if up:
             self.game_level = self.game_level + 1 if self.game_level < 3 else self.game_level
+            
             self.total_kills = 0
 
             # ── Bug Fix: Instant State Wipe on Level Up ──────────────────────
@@ -1412,6 +1427,41 @@ class Last_Lab_Defender:
         self.weapon_upgrade()
         # self.enemy_upgrade()
         glutPostRedisplay()
+
+    def level_transitions(self):
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        glOrtho(0, window_width, 0, window_height, -1, 1)
+
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+
+
+        glDisable(GL_DEPTH_TEST)
+        glColor3f(0,0.4,0)
+        glBegin(GL_QUADS)
+        glVertex2f(0, window_height//2 + 50)
+        glVertex2f(window_width, window_height//2+ 50)
+        glColor3f(0.2,1,0.2)        
+        glVertex2f(window_width, window_height//2 - 50)
+        glVertex2f(0, window_height//2-50)
+        glEnd()
+
+        glEnable(GL_DEPTH_TEST)
+
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        
+        # transition text
+        if self.game_level < 3:
+            transition_text =  f"Level {self.game_level} Cleared !!!!\n Next Level: {self.game_level + 1}"
+        else:
+            transition_text = f"End"
+        self.draw_text(window_width//2 - 150 , window_height//2 - 10, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)
 
     def animation(self):
         glutPostRedisplay()
@@ -1452,37 +1502,36 @@ class Last_Lab_Defender:
         glLoadIdentity()
         glViewport(0, 0, window_width, window_height)
         self.setupCamera()     
-        
-        # show levels
         self.display_level()
-
-        # time functions 
         if self.game_level < 3:
-            self.time_control()
             self.display_time()
-
-        # kill count 
         self.display_kill_count()
-
-
-        # Enemy calls
-        self.spawn_enemies()
-        self.enemy_movement()
-        self.bullet_enemy_collision()
-
-        # Level 2+ enemy combat coordinator & projectile pipeline
-        self.update_enemy_combat()           # Centralised volley firing (2-3 enemies)
-        self.update_enemy_bullets()          # Advance enemy bullets each frame
-        self.enemy_bullet_player_collision() # Check if any enemy bullet hit the player
-        if self.game_level == 3:
-            self.update_cannonballs()
-            self.cannonball_collisions()
-        
-        # call the functions 
         self.draw_elements()
-        self.bullet_movement()
-
         self.draw_hud()
+
+        if not self.transition_pause:
+            if self.game_level < 3:
+                self.time_control()
+            self.spawn_enemies()
+            self.enemy_movement()
+            self.bullet_enemy_collision()
+            self.update_enemy_combat()
+            self.update_enemy_bullets()
+            self.enemy_bullet_player_collision()
+            self.bullet_movement()
+
+            if self.game_level == 3:
+                self.update_cannonballs()
+                self.cannonball_collisions()
+
+        if self.transition_pause:
+            self.level_transitions()
+            if time.time() - self.transition_start >= 3:
+                self.transition_pause = False
+                self.game_level_upgrader()
+                self.start_time = time.time()
+                self.last_spawn_time = time.time()
+                self.enemy_volley_timer = time.time()
         glutSwapBuffers()
 
 def main():
