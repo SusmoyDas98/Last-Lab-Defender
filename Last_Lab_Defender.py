@@ -40,8 +40,8 @@ class Last_Lab_Defender:
 
 
         # time related 
-        self.level_1_time_limit = 10 #  60 seconds
-        self.level_2_time_limit = 10 #  60 seconds
+        self.level_1_time_limit = 30 #  60 seconds
+        self.level_2_time_limit = 30 #  60 seconds
         self.start_time = time.time()
         self.remaining_time = self.level_1_time_limit
         self.time_passed = 0
@@ -136,7 +136,16 @@ class Last_Lab_Defender:
         self.consecutive_cannonballs_destroyed = 0
 
         #player-view
-        self.first_person_view = False    
+        self.first_person_view = False
+
+        #pause + game over
+        self.paused = False
+        self.pause_start_time = None
+        self.game_over = False
+
+        #Magazine
+        self.mag_size = 20
+        self.ammo_mag = self.mag_size       
 
     def game_intro_1(self):
         global camera_pos, camera_look_at
@@ -1331,10 +1340,11 @@ class Last_Lab_Defender:
         # Fill (colored) showing remaining health
         if current > 0:
             fill_width = width * (min(current, maximum) / maximum)
-            if current < 3:
+            ratio = current / maximum
+            if ratio < 0.4:
                 fill_color = (1.0, 0.2, 0.2)
                 glColor3f(fill_color[0], fill_color[1], fill_color[2])
-            elif current < 4:
+            elif ratio < 0.7:
                 fill_color = (1.0, 0.6, 0.3)
                 glColor3f(fill_color[0], fill_color[1], fill_color[2])
             else:
@@ -1358,9 +1368,6 @@ class Last_Lab_Defender:
         glPushMatrix()
         glLoadIdentity()
 
-        bar_w = 200
-        bar_h = 25
-
         #player health bar text
         life_text = f"Player HP:"
         self.draw_text(30, window_height - 25, life_text, GLUT_BITMAP_HELVETICA_18)
@@ -1373,8 +1380,8 @@ class Last_Lab_Defender:
         self.draw_health_bar(
             x=30,
             y=window_height - 60,
-            width=bar_w,
-            height=bar_h,
+            width= 170,
+            height=25,
             current= self.player_health,
             maximum=5,
             fill_color=(0.2, 0.9, 0.3)
@@ -1384,10 +1391,10 @@ class Last_Lab_Defender:
         self.draw_health_bar(
             x= 30,
             y=25,
-            width=bar_w,
-            height=bar_h,
+            width=280,
+            height=25,
             current= self.capsule_health,
-            maximum= 5,
+            maximum= 10,
             fill_color=(0.2, 0.8, 1.0)
         )
         
@@ -1397,7 +1404,7 @@ class Last_Lab_Defender:
         glMatrixMode(GL_MODELVIEW)
         glEnable(GL_DEPTH_TEST) # Re-enable depth test
 
-    def draw_text(self, x, y, text, font=GLUT_BITMAP_HELVETICA_18):
+    def draw_text(self, x, y, text, font=GLUT_BITMAP_HELVETICA_18, color=(1, 1, 1)):
             glMatrixMode(GL_PROJECTION)
             glPushMatrix()
             glLoadIdentity()
@@ -1408,7 +1415,7 @@ class Last_Lab_Defender:
             glPushMatrix()
             glLoadIdentity()
             
-            glColor3f(1, 1, 1)
+            glColor3f(*color)
             # Draw text at (x, y) in screen coordinates
             glRasterPos2f(x, y)
             for ch in text:
@@ -1434,27 +1441,53 @@ class Last_Lab_Defender:
 
     # controls
     def MouseListener(self, button, state, x, y):
-        if button == GLUT_LEFT_BUTTON and state == GLUT_DOWN:
-            x, y, z = self.gun_facing
-            dir_x = math.cos(math.radians(self.player_angle-90))
-            dir_y = math.sin(math.radians(self.player_angle-90))
-            self.all_bullets.append({
-                'bullet_coord': [x, y, z],
-                'bullet_direction' : [dir_x, dir_y]
-            })
-        
-        elif button == GLUT_RIGHT_BUTTON and state == GLUT_DOWN:
-                self.first_person_view = not self.first_person_view
-                if self.first_person_view:
-                    print("First-Person View: ON")
-                else:
-                    print("Third-Person View: ON")
+        if self.paused or self.game_over or self.transition_pause:
+            return  
+        else:
+            if button == GLUT_LEFT_BUTTON and state == GLUT_DOWN:
+                if self.ammo_mag <= 0:
+                    print("Out of ammo! Press 'R' to reload")
+                    return
+                x, y, z = self.gun_facing
+                dir_x = math.cos(math.radians(self.player_angle-90))
+                dir_y = math.sin(math.radians(self.player_angle-90))
+                self.all_bullets.append({
+                    'bullet_coord': [x, y, z],
+                    'bullet_direction' : [dir_x, dir_y]
+                })
+                self.ammo_mag -= 1
+            elif button == GLUT_RIGHT_BUTTON and state == GLUT_DOWN:
+                    self.first_person_view = not self.first_person_view
+                    if self.first_person_view:
+                        print("First-Person View: ON")
+                    else:
+                        print("Third-Person View: ON")
 
 
     def KeyboardListener(self, key, x, y):
         global field_of_view
         x, y, z = self.player_spawn_position
-        if key ==b"z":
+
+        #restart
+        if key == b"f" or key == b"F":
+            self.reset_game()
+            print(f"Game Restarted")
+
+        #pause
+        elif key == b"p" or key == b"P":
+            if not self.paused:
+                self.paused = True
+                self.pause_start_time = time.time()
+                print(f"Game Paused")
+            else:
+                pause_duration = time.time() - self.pause_start_time
+                self.start_time += pause_duration
+                self.paused = False
+                print(f"Game Resumed")  
+  
+        elif self.paused or self.game_over:
+            return
+        elif key ==b"z":
             field_of_view -= 2
         elif key == b"x":
             field_of_view += 2
@@ -1508,6 +1541,12 @@ class Last_Lab_Defender:
         # elif key == b"m":
         #     self.game_level_upgrader()
 
+        #magazine-system
+        elif key == b"r" or key == b"R":
+            self.ammo_mag = self.mag_size
+            print(f"Reloaded!")
+        
+        #cheat mode
         glutPostRedisplay()
             
     def specialKeyListener(self, key, x, y):
@@ -1536,15 +1575,19 @@ class Last_Lab_Defender:
 
     # weapon upgrade:
     def weapon_upgrade(self, level = 1):
-
         if self.level_1_limit_crossed and self.game_level == 2:
             self.level_weapon_head_color = (0/255, 200/255, 255/255)
             self.level_weapon_handle_color = (120/255, 255/255, 255/255)
             self.bullet_speed = 55
         elif self.level_2_limit_crossed   and self.game_level == 3:
-            self.level_weapon_head_color = (255/255, 60/255, 120/255)
-            self.level_weapon_handle_color = (255/255, 120/255, 180/255)  
-            self.bullet_speed = 80
+            if self.level_1_limit_crossed:
+                self.level_weapon_head_color = (255/255, 60/255, 120/255)
+                self.level_weapon_handle_color = (255/255, 120/255, 180/255)  
+                self.bullet_speed = 80
+            else:
+                self.level_weapon_head_color = (0/255, 200/255, 255/255)
+                self.level_weapon_handle_color = (120/255, 255/255, 255/255)
+                self.bullet_speed = 55                
         else:
             self.level_weapon_head_color = (170/255, 120/255, 255/255)
             self.level_weapon_handle_color = (200/255, 180/255, 255/255)            
@@ -1552,8 +1595,14 @@ class Last_Lab_Defender:
 
     def display_level(self):
             level_text = f"Level: {self.game_level}"
-            self.draw_text(window_width - window_width//2, window_height - 30, level_text )   
+            self.draw_text(window_width - window_width//2, window_height - 30, level_text )
+    
+    def display_magazine(self):
+        mag_text = f"Ammo: {self.ammo_mag}/{self.mag_size}"
+        self.draw_text(25, window_height - 90, mag_text)
 
+    def reset_game(self):
+        self.initiate_all()
 
     # level decider
     def game_level_upgrader(self, up = True):
@@ -1653,12 +1702,19 @@ class Last_Lab_Defender:
         glLoadIdentity()
         glViewport(0, 0, window_width, window_height)
         self.setupCamera()     
+
+        if not self.game_over and not self.game_intro_ongoing:
+            if self.player_health <= 0 or self.capsule_health <= 0:
+                self.game_over = True
+                print(f"GAME OVER! Press 'F' to restart.")
+
         self.display_level()
         if self.game_level < 3:
             self.display_time()
         self.display_kill_count()
         self.draw_elements()
         self.draw_hud()
+        self.display_magazine()
 
         if self.game_intro_ongoing:
             # self.intro_starting_time = time.time()
@@ -1666,8 +1722,8 @@ class Last_Lab_Defender:
             if self.intro_starting_time is None:
                 self.intro_starting_time = time.time()
             self.game_intro()
-        else:
 
+        elif not self.paused and not self.game_over:
             if not self.transition_pause:
                 if self.game_level < 3:
                     self.time_control()
@@ -1691,6 +1747,16 @@ class Last_Lab_Defender:
                     self.start_time = time.time()
                     self.last_spawn_time = time.time()
                     self.enemy_volley_timer = time.time()
+
+        elif self.paused:
+            self.draw_text(window_width//2 - 20, window_height//2 + 20,
+                           "PAUSED")
+
+        elif self.game_over:
+            self.draw_text(window_width//2 - 20, window_height//2 + 40,
+                           "GAME OVER", color=(1.0, 0.2, 0.2))
+            self.draw_text(window_width//2 - 35, window_height//2 - 10,
+                           "Press F to restart", color=(1.0, 0.2, 0.2))
         glutSwapBuffers()
 
 def main():
