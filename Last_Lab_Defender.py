@@ -9,6 +9,11 @@ import time
 
 # Global variables 
 camera_pos = (1000, 1000, 800)
+# camera_pos = (600, -600,400)
+# camera_pos = (0, -250, 120)
+# camera_pos = (80, -150, 90)
+# camera_pos = (-300, -200, 50)
+# camera_pos = (0, 0, 800)
 camera_look_at = (327,77,75)
 axis_decision = (0, 0, 1)
 window_height, window_width = 630, 1270
@@ -24,6 +29,12 @@ class Last_Lab_Defender:
         self.initiate_all()
 
     def initiate_all(self):
+        
+        # game intro
+        self.ongoing_game_restarted = False
+        self.game_intro_ongoing = True if self.ongoing_game_restarted is False else False
+        self.into = 1
+
 
         # time related 
         self.level_1_time_limit = 10 #  60 seconds
@@ -123,6 +134,39 @@ class Last_Lab_Defender:
 
         #player-view
         self.first_person_view = False     
+
+    def game_intro(self):
+        glMatrixMode(GL_PROJECTION)
+        glPushMatrix()
+        glLoadIdentity()
+        glOrtho(0, window_width, 0, window_height, -1, 1)
+
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+        glLoadIdentity()
+
+
+        glDisable(GL_DEPTH_TEST)
+        glColor3f(0,0.4,0)
+        glBegin(GL_QUADS)
+        glVertex2f(0, window_height//2 + 50)
+        glVertex2f(window_width, window_height//2+ 50)
+        glColor3f(0.2,1,0.2)        
+        glVertex2f(window_width, window_height//2 - 50)
+        glVertex2f(0, window_height//2-50)
+        glEnd()
+
+        glEnable(GL_DEPTH_TEST)
+
+        glPopMatrix()
+        glMatrixMode(GL_PROJECTION)
+        glPopMatrix()
+        glMatrixMode(GL_MODELVIEW)
+        
+        # transition text
+        transition_text = f"This is an intro"
+        self.draw_text(window_width//2 - 150 , window_height//2 - 10, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)
+
 
 
     def time_control(self):
@@ -1347,10 +1391,30 @@ class Last_Lab_Defender:
                 x = move_x
                 y = move_y
             self.player_spawn_position = (x, y, z)            
-        elif key == b"d":
+        elif key == b"e":
             self.player_angle -= 5
-        elif key == b"a":
+        elif key == b"q":
             self.player_angle += 5
+        elif key == b"a":
+            dir_x = math.cos(math.radians(self.player_angle - 90))
+            dir_y = math.sin(math.radians(self.player_angle - 90))
+            right_x = -dir_y
+            right_y = dir_x
+            move_x, move_y = x+right_x*self.player_speed, y+right_y*self.player_speed
+            if (-GRID_LENGTH//2)+25<=move_x<=(GRID_LENGTH//2)-25 and (-GRID_WIDTH//2)+25<=move_y<=(GRID_WIDTH//2)-25:
+                x = move_x
+                y = move_y
+                self.player_spawn_position = (x, y, z)             
+        elif key == b"d":
+            dir_x = math.cos(math.radians(self.player_angle - 90))
+            dir_y = math.sin(math.radians(self.player_angle - 90))
+            right_x = -dir_y
+            right_y = dir_x
+            move_x, move_y = x-right_x*self.player_speed, y-right_y*self.player_speed
+            if (-GRID_LENGTH//2)+25<=move_x<=(GRID_LENGTH//2)-25 and (-GRID_WIDTH//2)+25<=move_y<=(GRID_WIDTH//2)-25:
+                x = move_x
+                y = move_y
+                self.player_spawn_position = (x, y, z)                       
         #  This part if for manually changing the level for checking the changes appearing
         # elif key == b"n":
         #     self.game_level_upgrader(False)
