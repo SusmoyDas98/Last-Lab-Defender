@@ -31,9 +31,12 @@ class Last_Lab_Defender:
     def initiate_all(self):
         
         # game intro
+        self.intro_starting_time = None
+        self.game_started = False
         self.ongoing_game_restarted = False
-        self.game_intro_ongoing = True if self.ongoing_game_restarted is False else False
-        self.into = 1
+        self.game_intro_ongoing = True 
+        self.into_skipped = False
+        self.intro_stage = 1
 
 
         # time related 
@@ -133,9 +136,83 @@ class Last_Lab_Defender:
         self.consecutive_cannonballs_destroyed = 0
 
         #player-view
-        self.first_person_view = False     
+        self.first_person_view = False    
 
+    def game_intro_1(self):
+        global camera_pos, camera_look_at
+        camera_pos = (900, 700,650)
+        camera_look_at = (300, 200, 150)
+        x = window_width//2-620
+        top = window_height//2
+        bottom = 30
+        y_center = (top+bottom)//2
+        # transition text
+        transition_text = f"Our protagonist is the last of the guardians assigned for shielding a capsule containing a secret bio substance. "
+        self.draw_text(x ,y_center + 60, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)        
+        transition_text = f"Some aliens have already made it all the way to this realm in search of this. "
+        self.draw_text(x  , y_center, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)        
+        transition_text = f"They have obliterated all sorts of defenses and terminated all the guardians except the protagonist "
+        self.draw_text(x  , y_center - 60, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)                
+    def game_intro_2(self):
+        global camera_pos,camera_look_at
+        camera_pos = (-200, 650, 250)
+        camera_look_at = (300, 200, 120)
+        x = window_width//2-620
+        top = window_height//2
+        bottom = 30
+        y_center = (top+bottom)//2
+        # transition text
+        transition_text = f"Aliens  have already made it all the way to this realm in search of the capsule "
+        self.draw_text(x ,y_center + 60, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)        
+        transition_text = f"They have obliterated all sorts of defenses  in their  path and terminated all the guardians. "
+        self.draw_text(x  , y_center, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)        
+        transition_text = f"Only the protagonist survives, who is now stuck with the capsule inside the room"
+        self.draw_text(x  , y_center - 60, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)     
+    def game_intro_3(self):
+        global camera_pos, camera_look_at
+        camera_pos = (320, 80, 170)
+        camera_look_at = (300, 200, 140)
+        x = window_width//2-620
+        top = window_height//2
+        bottom = 30
+        y_center = (top+bottom)//2
+        # transition text
+        transition_text = f"Now our protagonist has to defend the capsule at any cost using a gunlike weapon to neutralize the enemies. "
+        self.draw_text(x ,y_center + 60, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)        
+        transition_text = f"Our guardian’s suit can automatically extract lifeline regenerating substances by killing some special aliens colored in red. "
+        self.draw_text(x  , y_center, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)        
+        transition_text = f"Furthermore, after a certain number of kills, his weapon can automatically upgrade to a better version with more efficiency."
+        self.draw_text(x  , y_center - 60, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)     
+    def game_intro_4(self):
+        global camera_pos, camera_look_at
+        camera_pos = (350, 250, 180)
+        camera_look_at = (300,200,120)
+        x = window_width//2-620
+        top = window_height//2
+        bottom = 30
+        y_center = (top+bottom)//2
+        # transition text
+        transition_text = f"Aliens  sending the weak unarmed aliens initially to test the power of the threat "
+        self.draw_text(x ,y_center + 60, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)        
+        transition_text = f"Within a timeframe if the protagonist proves to be resilient enough, they will send a more potent armed regiment."
+        self.draw_text(x  , y_center, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)        
+        transition_text = f" If the guardian remains unweavered, then the final boss of the aliens will take matters into its own hands."
+        self.draw_text(x  , y_center - 60, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)   
     def game_intro(self):
+        global camera_pos
+        elapsed_time = time.time() - self.intro_starting_time
+        if elapsed_time >= 4:
+            self.intro_stage += 1
+            self.intro_starting_time = time.time() 
+        if self.intro_stage > 4:
+            self.game_intro_ongoing = False
+            self.game_started = True
+            self.start_time = time.time()
+            camera_pos = (1000, 1000, 800)
+            self.first_person_view = True
+            return
+        # if elapsed_time > 6:
+        #     return         
         glMatrixMode(GL_PROJECTION)
         glPushMatrix()
         glLoadIdentity()
@@ -147,13 +224,15 @@ class Last_Lab_Defender:
 
 
         glDisable(GL_DEPTH_TEST)
-        glColor3f(0,0.4,0)
+        glColor3f(0.05,0.05,0.05)
+        glColor3f(0.0, 0.2, 0.2)
         glBegin(GL_QUADS)
-        glVertex2f(0, window_height//2 + 50)
-        glVertex2f(window_width, window_height//2+ 50)
-        glColor3f(0.2,1,0.2)        
-        glVertex2f(window_width, window_height//2 - 50)
-        glVertex2f(0, window_height//2-50)
+        glVertex2f(0, window_height//2)
+        glVertex2f(window_width, window_height//2)
+        glColor3f(0.1,0.4,0.1)        
+        # glColor3f(0.0, 0.9, 0.7)
+        glVertex2f(window_width, 30)
+        glVertex2f(0, 30)
         glEnd()
 
         glEnable(GL_DEPTH_TEST)
@@ -162,10 +241,18 @@ class Last_Lab_Defender:
         glMatrixMode(GL_PROJECTION)
         glPopMatrix()
         glMatrixMode(GL_MODELVIEW)
+
+        if self.intro_stage == 1:
+            self.game_intro_1()
+        elif  self.intro_stage == 2:
+            self.game_intro_2()
+        elif self.intro_stage == 3:
+            self.game_intro_3()
         
-        # transition text
-        transition_text = f"This is an intro"
-        self.draw_text(window_width//2 - 150 , window_height//2 - 10, transition_text,GLUT_BITMAP_TIMES_ROMAN_24)
+        elif self.intro_stage == 4:
+            self.game_intro_4()
+        
+
 
 
 
@@ -1573,29 +1660,37 @@ class Last_Lab_Defender:
         self.draw_elements()
         self.draw_hud()
 
-        if not self.transition_pause:
-            if self.game_level < 3:
-                self.time_control()
-            self.spawn_enemies()
-            self.enemy_movement()
-            self.bullet_enemy_collision()
-            self.update_enemy_combat()
-            self.update_enemy_bullets()
-            self.enemy_bullet_player_collision()
-            self.bullet_movement()
+        if self.game_intro_ongoing:
+            # self.intro_starting_time = time.time()
+            # self.game_intro()
+            if self.intro_starting_time is None:
+                self.intro_starting_time = time.time()
+            self.game_intro()
+        else:
 
-            if self.game_level == 3:
-                self.update_cannonballs()
-                self.cannonball_collisions()
+            if not self.transition_pause:
+                if self.game_level < 3:
+                    self.time_control()
+                self.spawn_enemies()
+                self.enemy_movement()
+                self.bullet_enemy_collision()
+                self.update_enemy_combat()
+                self.update_enemy_bullets()
+                self.enemy_bullet_player_collision()
+                self.bullet_movement()
 
-        if self.transition_pause:
-            self.level_transitions()
-            if time.time() - self.transition_start >= 3:
-                self.transition_pause = False
-                self.game_level_upgrader()
-                self.start_time = time.time()
-                self.last_spawn_time = time.time()
-                self.enemy_volley_timer = time.time()
+                if self.game_level == 3:
+                    self.update_cannonballs()
+                    self.cannonball_collisions()
+
+            if self.transition_pause:
+                self.level_transitions()
+                if time.time() - self.transition_start >= 3:
+                    self.transition_pause = False
+                    self.game_level_upgrader()
+                    self.start_time = time.time()
+                    self.last_spawn_time = time.time()
+                    self.enemy_volley_timer = time.time()
         glutSwapBuffers()
 
 def main():
